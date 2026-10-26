@@ -33,9 +33,10 @@ export async function obtener(personaId: string) {
   return aRespuesta(persona);
 }
 
-export async function guardar(personaId: string, datos: GuardarFichaDto, usuarioId?: string) {
-  const existe = await prisma.personaCuidada.findUnique({ where: { id: personaId }, select: { id: true } });
+export async function guardar(idRecibido: string, datos: GuardarFichaDto, usuarioId?: string) {
+  const existe = await prisma.personaCuidada.findUnique({ where: { id: idRecibido }, select: { id: true } });
   if (!existe) throw new HttpError(404, 'Persona no encontrada');
+  const personaId = existe.id;
 
   const campos = {
     tipoSanguineo: datos.tipoSanguineo === 'desconocido' ? null : datos.tipoSanguineo,
