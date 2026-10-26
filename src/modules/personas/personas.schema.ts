@@ -22,7 +22,7 @@ const requerido = (mensaje: string) => ({ required_error: mensaje, invalid_type_
 
 export const crearPersonaSchema = z
   .object({
-    id: z.string().uuid().optional(),
+    id: z.string().uuid().toLowerCase().optional(),
     nombre: z.string(requerido('El nombre es obligatorio')).trim().min(2, 'El nombre debe tener al menos 2 letras').max(60),
     apellidos: z.string(requerido('Los apellidos son obligatorios')).trim().min(1, 'Los apellidos son obligatorios').max(59),
     fechaNacimiento: z.coerce
@@ -42,4 +42,4 @@ export const crearPersonaSchema = z
 
 export type CrearPersonaDto = z.infer<typeof crearPersonaSchema>;
 
-export const idSchema = z.string().uuid('Identificador inválido');
+export const idSchema = z.string().uuid('Identificador inválido').toLowerCase();
