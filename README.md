@@ -41,7 +41,7 @@ La API queda en `http://localhost:3000`.
 | GET | `/familiares/:id` | Detalle de una persona |
 | POST | `/familiares` | Registra una persona (valida datos obligatorios) |
 | DELETE | `/familiares/:id` | Elimina una persona |
-| GET | `/familiares/:id/ficha-medica` | Ficha médica de una persona (404 si no tiene) |
+| GET | `/familiares/:id/ficha-medica` | Ficha médica de una persona (404 sin cuerpo si aún no tiene) |
 | PUT | `/familiares/:id/ficha-medica` | Crea o reemplaza la ficha médica |
 
 Encabezado opcional `X-Usuario-Id`: al crear, vincula a la persona con ese usuario en `miembro_red` (con su parentesco); al listar, devuelve solo las personas de ese usuario. Se reemplazará por la autenticación.
@@ -67,7 +67,8 @@ Ejemplo de cuerpo para `PUT /familiares/:id/ficha-medica` (las alergias y enferm
   "alergias": [{ "nombre": "Penicilina", "severidad": "grave" }],
   "enfermedades": [{ "nombre": "Hipertensión", "notas": "Desde 2019" }],
   "medicoTratante": "Dra. López",
-  "institucionSalud": "IMSS"
+  "institucionSalud": "IMSS",
+  "observaciones": "Usa marcapasos"
 }
 ```
 
