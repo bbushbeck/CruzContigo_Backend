@@ -17,6 +17,24 @@ enum TipoCuidado {
   otro
 }
 
+enum TipoSanguineo {
+  A_POS       @map("A+")
+  A_NEG       @map("A-")
+  B_POS       @map("B+")
+  B_NEG       @map("B-")
+  AB_POS      @map("AB+")
+  AB_NEG      @map("AB-")
+  O_POS       @map("O+")
+  O_NEG       @map("O-")
+  desconocido
+}
+
+enum Severidad {
+  leve
+  moderada
+  grave
+}
+
 enum RolMiembro {
   titular
   administrador
@@ -43,6 +61,7 @@ model PersonaCuidada {
   creadoPor        String?       @map("creado_por") @db.Char(36)
   creadoEn         DateTime      @default(now()) @map("creado_en") @db.DateTime(3)
   miembros         MiembroRed[]
+  ficha            FichaMedica?
 
   @@map("persona_cuidada")
 }
@@ -60,4 +79,36 @@ model MiembroRed {
 
   @@unique([personaId, usuarioId])
   @@map("miembro_red")
+}
+
+model FichaMedica {
+  personaId      String          @id @map("persona_id") @db.Char(36)
+  tipoSanguineo  TipoSanguineo   @map("tipo_sanguineo")
+  observaciones  String?         @db.VarChar(1000)
+  actualizadoEn  DateTime        @updatedAt @map("actualizado_en") @db.DateTime(3)
+  persona        PersonaCuidada  @relation(fields: [personaId], references: [id], onDelete: Cascade)
+  alergias       Alergia[]
+  padecimientos  Padecimiento[]
+
+  @@map("ficha_medica")
+}
+
+model Alergia {
+  id         String       @id @default(uuid()) @db.Char(36)
+  personaId  String       @map("persona_id") @db.Char(36)
+  nombre     String       @db.VarChar(120)
+  severidad  Severidad
+  ficha      FichaMedica  @relation(fields: [personaId], references: [personaId], onDelete: Cascade)
+
+  @@map("alergia")
+}
+
+model Padecimiento {
+  id         String       @id @default(uuid()) @db.Char(36)
+  personaId  String       @map("persona_id") @db.Char(36)
+  nombre     String       @db.VarChar(120)
+  notas      String?      @db.VarChar(500)
+  ficha      FichaMedica  @relation(fields: [personaId], references: [personaId], onDelete: Cascade)
+
+  @@map("padecimiento")
 }
