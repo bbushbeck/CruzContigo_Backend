@@ -17,18 +17,6 @@ enum TipoCuidado {
   otro
 }
 
-enum TipoSanguineo {
-  A_POS       @map("A+")
-  A_NEG       @map("A-")
-  B_POS       @map("B+")
-  B_NEG       @map("B-")
-  AB_POS      @map("AB+")
-  AB_NEG      @map("AB-")
-  O_POS       @map("O+")
-  O_NEG       @map("O-")
-  desconocido
-}
-
 enum Severidad {
   leve
   moderada
@@ -62,6 +50,8 @@ model PersonaCuidada {
   creadoEn         DateTime      @default(now()) @map("creado_en") @db.DateTime(3)
   miembros         MiembroRed[]
   ficha            FichaMedica?
+  alergias         Alergia[]
+  padecimientos    Padecimiento[]
 
   @@map("persona_cuidada")
 }
@@ -82,33 +72,36 @@ model MiembroRed {
 }
 
 model FichaMedica {
-  personaId      String          @id @map("persona_id") @db.Char(36)
-  tipoSanguineo  TipoSanguineo   @map("tipo_sanguineo")
-  observaciones  String?         @db.VarChar(1000)
-  actualizadoEn  DateTime        @updatedAt @map("actualizado_en") @db.DateTime(3)
-  persona        PersonaCuidada  @relation(fields: [personaId], references: [id], onDelete: Cascade)
-  alergias       Alergia[]
-  padecimientos  Padecimiento[]
+  personaId        String          @id @map("persona_id") @db.Char(36)
+  tipoSanguineo    String?         @map("tipo_sanguineo") @db.VarChar(3)
+  medicoTratante   String?         @map("medico_tratante") @db.VarChar(120)
+  institucionSalud String?         @map("institucion_salud") @db.VarChar(120)
+  antecedentes     Bytes?          @db.VarBinary(4096)
+  actualizadoPor   String?         @map("actualizado_por") @db.Char(36)
+  actualizadoEn    DateTime        @default(now()) @updatedAt @map("actualizado_en") @db.DateTime(3)
+  persona          PersonaCuidada  @relation(fields: [personaId], references: [id], onDelete: Cascade)
 
   @@map("ficha_medica")
 }
 
 model Alergia {
-  id         String       @id @default(uuid()) @db.Char(36)
-  personaId  String       @map("persona_id") @db.Char(36)
-  nombre     String       @db.VarChar(120)
+  id         String          @id @default(uuid()) @db.Char(36)
+  personaId  String          @map("persona_id") @db.Char(36)
+  sustancia  String          @db.VarChar(120)
+  reaccion   String?         @db.Text
   severidad  Severidad
-  ficha      FichaMedica  @relation(fields: [personaId], references: [personaId], onDelete: Cascade)
+  persona    PersonaCuidada  @relation(fields: [personaId], references: [id], onDelete: Cascade)
 
   @@map("alergia")
 }
 
 model Padecimiento {
-  id         String       @id @default(uuid()) @db.Char(36)
-  personaId  String       @map("persona_id") @db.Char(36)
-  nombre     String       @db.VarChar(120)
-  notas      String?      @db.VarChar(500)
-  ficha      FichaMedica  @relation(fields: [personaId], references: [personaId], onDelete: Cascade)
+  id         String          @id @default(uuid()) @db.Char(36)
+  personaId  String          @map("persona_id") @db.Char(36)
+  nombre     String          @db.VarChar(120)
+  desde      DateTime?       @db.Date
+  notas      String?         @db.Text
+  persona    PersonaCuidada  @relation(fields: [personaId], references: [id], onDelete: Cascade)
 
   @@map("padecimiento")
 }
