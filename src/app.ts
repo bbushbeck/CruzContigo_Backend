@@ -2,6 +2,7 @@ import express from 'express';
 import { manejadorErrores, rutaNoEncontrada } from './common/filters/errores';
 import { fichaMedicaRouter } from './modules/ficha-medica/ficha-medica.routes';
 import { personasRouter } from './modules/personas/personas.routes';
+import { authRouter } from './modules/auth/auth.routes';
 
 export function crearApp() {
   const app = express();
@@ -13,6 +14,7 @@ export function crearApp() {
     res.json({ estado: 'ok' });
   });
 
+  app.use('/auth', authRouter);
   app.use('/familiares/:id/ficha-medica', fichaMedicaRouter);
   app.use('/familiares', personasRouter);
 
