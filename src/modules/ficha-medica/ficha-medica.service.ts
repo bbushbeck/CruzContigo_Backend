@@ -5,7 +5,7 @@ import { isoSinMilisegundos } from '../../common/utils/fechas';
 import type { GuardarFichaDto } from './ficha-medica.schema';
 
 const conFicha = {
-  ficha: { select: { tipoSanguineo: true, medicoTratante: true, institucionSalud: true, actualizadoEn: true } },
+  ficha: { select: { tipoSanguineo: true, medicoTratante: true, institucionSalud: true, observaciones: true, actualizadoEn: true } },
   alergias: true,
   padecimientos: true,
 } satisfies Prisma.PersonaCuidadaInclude;
@@ -21,7 +21,7 @@ function aRespuesta(persona: PersonaConFicha) {
     enfermedades: persona.padecimientos.map(({ id, nombre, notas }) => ({ id, nombre, notas })),
     medicoTratante: ficha?.medicoTratante ?? null,
     institucionSalud: ficha?.institucionSalud ?? null,
-    observaciones: null,
+    observaciones: ficha?.observaciones ?? null,
     ultimaActualizacion: isoSinMilisegundos(ficha?.actualizadoEn ?? persona.creadoEn),
   };
 }
@@ -29,9 +29,7 @@ function aRespuesta(persona: PersonaConFicha) {
 export async function obtener(personaId: string) {
   const persona = await prisma.personaCuidada.findUnique({ where: { id: personaId }, include: conFicha });
   if (!persona) throw new HttpError(404, 'Persona no encontrada');
-  if (!persona.ficha && !persona.alergias.length && !persona.padecimientos.length) {
-    throw new HttpError(404, 'La persona no tiene ficha médica');
-  }
+  if (!persona.ficha && !persona.alergias.length && !persona.padecimientos.length) return null;
   return aRespuesta(persona);
 }
 
@@ -43,6 +41,7 @@ export async function guardar(personaId: string, datos: GuardarFichaDto, usuario
     tipoSanguineo: datos.tipoSanguineo === 'desconocido' ? null : datos.tipoSanguineo,
     medicoTratante: datos.medicoTratante || null,
     institucionSalud: datos.institucionSalud || null,
+    observaciones: datos.observaciones || null,
     actualizadoPor: usuarioId ?? null,
   };
 
