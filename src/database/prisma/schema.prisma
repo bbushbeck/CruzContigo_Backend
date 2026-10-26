@@ -17,6 +17,12 @@ enum TipoCuidado {
   otro
 }
 
+enum Severidad {
+  leve
+  moderada
+  grave
+}
+
 enum RolMiembro {
   titular
   administrador
@@ -43,6 +49,9 @@ model PersonaCuidada {
   creadoPor        String?       @map("creado_por") @db.Char(36)
   creadoEn         DateTime      @default(now()) @map("creado_en") @db.DateTime(3)
   miembros         MiembroRed[]
+  ficha            FichaMedica?
+  alergias         Alergia[]
+  padecimientos    Padecimiento[]
 
   @@map("persona_cuidada")
 }
@@ -60,4 +69,39 @@ model MiembroRed {
 
   @@unique([personaId, usuarioId])
   @@map("miembro_red")
+}
+
+model FichaMedica {
+  personaId        String          @id @map("persona_id") @db.Char(36)
+  tipoSanguineo    String?         @map("tipo_sanguineo") @db.VarChar(3)
+  medicoTratante   String?         @map("medico_tratante") @db.VarChar(120)
+  institucionSalud String?         @map("institucion_salud") @db.VarChar(120)
+  antecedentes     Bytes?          @db.VarBinary(4096)
+  actualizadoPor   String?         @map("actualizado_por") @db.Char(36)
+  actualizadoEn    DateTime        @default(now()) @updatedAt @map("actualizado_en") @db.DateTime(3)
+  persona          PersonaCuidada  @relation(fields: [personaId], references: [id], onDelete: Cascade)
+
+  @@map("ficha_medica")
+}
+
+model Alergia {
+  id         String          @id @default(uuid()) @db.Char(36)
+  personaId  String          @map("persona_id") @db.Char(36)
+  sustancia  String          @db.VarChar(120)
+  reaccion   String?         @db.Text
+  severidad  Severidad
+  persona    PersonaCuidada  @relation(fields: [personaId], references: [id], onDelete: Cascade)
+
+  @@map("alergia")
+}
+
+model Padecimiento {
+  id         String          @id @default(uuid()) @db.Char(36)
+  personaId  String          @map("persona_id") @db.Char(36)
+  nombre     String          @db.VarChar(120)
+  desde      DateTime?       @db.Date
+  notas      String?         @db.Text
+  persona    PersonaCuidada  @relation(fields: [personaId], references: [id], onDelete: Cascade)
+
+  @@map("padecimiento")
 }
