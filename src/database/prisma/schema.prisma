@@ -1,0 +1,63 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum TipoCuidado {
+  edad_avanzada
+  discapacidad
+  enfermedad_cronica
+  recuperacion
+  menor_necesidades_especiales
+  otro
+}
+
+enum RolMiembro {
+  titular
+  administrador
+  cocuidador
+  solo_lectura
+  temporal
+}
+
+enum EstadoMiembro {
+  invitado
+  activo
+  revocado
+  vencido
+}
+
+model PersonaCuidada {
+  id               String        @id @default(uuid()) @db.Char(36)
+  titularUsuarioId String?       @map("titular_usuario_id") @db.Char(36)
+  nombre           String        @db.VarChar(120)
+  fechaNacimiento  DateTime      @map("fecha_nacimiento") @db.Date
+  telefono         String?       @db.VarChar(20)
+  tipoCuidado      TipoCuidado   @map("tipo_cuidado")
+  fotoUrl          String?       @map("foto_url") @db.VarChar(500)
+  creadoPor        String?       @map("creado_por") @db.Char(36)
+  creadoEn         DateTime      @default(now()) @map("creado_en") @db.DateTime(3)
+  miembros         MiembroRed[]
+
+  @@map("persona_cuidada")
+}
+
+model MiembroRed {
+  id          String          @id @default(uuid()) @db.Char(36)
+  personaId   String          @map("persona_id") @db.Char(36)
+  usuarioId   String          @map("usuario_id") @db.Char(36)
+  rol         RolMiembro
+  relacion    String?         @db.VarChar(40)
+  estado      EstadoMiembro   @default(invitado)
+  venceEn     DateTime?       @map("vence_en") @db.DateTime(3)
+  invitadoPor String?         @map("invitado_por") @db.Char(36)
+  persona     PersonaCuidada  @relation(fields: [personaId], references: [id], onDelete: Cascade)
+
+  @@unique([personaId, usuarioId])
+  @@map("miembro_red")
+}
