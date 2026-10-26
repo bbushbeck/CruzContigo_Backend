@@ -77,6 +77,7 @@ model FichaMedica {
   medicoTratante   String?         @map("medico_tratante") @db.VarChar(120)
   institucionSalud String?         @map("institucion_salud") @db.VarChar(120)
   antecedentes     Bytes?          @db.VarBinary(4096)
+  observaciones    String?         @db.VarChar(1000)
   actualizadoPor   String?         @map("actualizado_por") @db.Char(36)
   actualizadoEn    DateTime        @default(now()) @updatedAt @map("actualizado_en") @db.DateTime(3)
   persona          PersonaCuidada  @relation(fields: [personaId], references: [id], onDelete: Cascade)

@@ -24,6 +24,7 @@ export const guardarFichaSchema = z
     enfermedades: z.array(enfermedadSchema).max(50).default([]).refine(sinRepetidos, 'Hay enfermedades repetidas'),
     medicoTratante: z.string().trim().max(120).nullish(),
     institucionSalud: z.string().trim().max(120).nullish(),
+    observaciones: z.string().trim().max(1000).nullish(),
   })
   .strip();
 
