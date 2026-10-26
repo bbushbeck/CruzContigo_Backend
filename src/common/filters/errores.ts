@@ -8,7 +8,8 @@ export const rutaNoEncontrada: RequestHandler = (_req, res) => {
 
 export const manejadorErrores: ErrorRequestHandler = (err, _req, res, _next) => {
   if (err instanceof ZodError) {
-    res.status(400).json({ error: 'Datos inválidos', detalles: err.flatten().fieldErrors });
+    const { fieldErrors, formErrors } = err.flatten();
+    res.status(400).json({ error: 'Datos inválidos', detalles: formErrors.length ? { ...fieldErrors, general: formErrors } : fieldErrors });
     return;
   }
   if (err instanceof HttpError) {
