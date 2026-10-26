@@ -17,7 +17,13 @@ const personaDe = (req: Request) => idSchema.parse((req.params as { id: string }
 export const fichaMedicaRouter = Router({ mergeParams: true });
 
 fichaMedicaRouter.get('/', async (req, res) => {
-  res.json(await fichas.obtener(personaDe(req)));
+  const ficha = await fichas.obtener(personaDe(req));
+  // Sin cuerpo para que la app lo distinga de una persona inexistente y muestre la ficha vacía
+  if (!ficha) {
+    res.status(404).end();
+    return;
+  }
+  res.json(ficha);
 });
 
 fichaMedicaRouter.put('/', async (req, res) => {
