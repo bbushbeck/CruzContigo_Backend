@@ -6,13 +6,13 @@ const sinRepetidos = (lista: { nombre: string }[]) =>
   new Set(lista.map((e) => e.nombre.toLowerCase())).size === lista.length;
 
 const alergiaSchema = z.object({
-  id: z.string().uuid().optional(),
+  id: z.string().uuid().toLowerCase().optional(),
   nombre: z.string().trim().min(1, 'La alergia necesita un nombre').max(120),
   severidad: z.enum(['leve', 'moderada', 'grave'], { errorMap: () => ({ message: 'La severidad debe ser leve, moderada o grave' }) }),
 });
 
 const enfermedadSchema = z.object({
-  id: z.string().uuid().optional(),
+  id: z.string().uuid().toLowerCase().optional(),
   nombre: z.string().trim().min(1, 'La enfermedad necesita un nombre').max(120),
   notas: z.string().trim().max(1000).nullish(),
 });
@@ -24,6 +24,7 @@ export const guardarFichaSchema = z
     enfermedades: z.array(enfermedadSchema).max(50).default([]).refine(sinRepetidos, 'Hay enfermedades repetidas'),
     medicoTratante: z.string().trim().max(120).nullish(),
     institucionSalud: z.string().trim().max(120).nullish(),
+    observaciones: z.string().trim().max(1000).nullish(),
   })
   .strip();
 

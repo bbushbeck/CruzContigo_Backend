@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { after, before, describe, it } from 'node:test';
 import type { Server } from 'node:http';
 
@@ -12,6 +12,9 @@ if (!['localhost', '127.0.0.1', '[::1]'].includes(target.hostname) || !target.pa
 }
 process.env.DATABASE_URL = databaseURL;
 process.env.DB_CA_PATH = '';
+// El router de auth incorporado desde main requiere una clave al crear la app.
+// Se genera solo para este proceso de pruebas; no se guarda ni modifica el .env.
+process.env.OTP_HMAC_SECRET = randomBytes(32).toString('hex');
 
 describe('Medicamentos: API y persistencia MySQL', () => {
   let server: Server;
@@ -68,6 +71,8 @@ describe('Medicamentos: API y persistencia MySQL', () => {
   });
 
   it('registra y persiste el medicamento con el contrato de iOS', async () => {
+    // Autenticación y medicamentos deben seguir montados después del merge.
+    assert.equal((await request('/auth/phone/request-code', 'POST', {})).status, 400);
     assert.deepEqual(await request(path()), { status: 200, data: [] });
     const result = await request(path(), 'POST', medicamento);
     assert.equal(result.status, 201);
