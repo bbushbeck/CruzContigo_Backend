@@ -1,21 +1,6 @@
 import { z } from 'zod';
-import type { TipoSanguineo } from '@prisma/client';
 
-export const tiposSanguineosApp = {
-  'A+': 'A_POS',
-  'A-': 'A_NEG',
-  'B+': 'B_POS',
-  'B-': 'B_NEG',
-  'AB+': 'AB_POS',
-  'AB-': 'AB_NEG',
-  'O+': 'O_POS',
-  'O-': 'O_NEG',
-  desconocido: 'desconocido',
-} as const satisfies Record<string, TipoSanguineo>;
-
-export type TipoSanguineoApp = keyof typeof tiposSanguineosApp;
-
-const tiposApp = Object.keys(tiposSanguineosApp) as [TipoSanguineoApp, ...TipoSanguineoApp[]];
+export const tiposSanguineos = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'desconocido'] as const;
 
 const sinRepetidos = (lista: { nombre: string }[]) =>
   new Set(lista.map((e) => e.nombre.toLowerCase())).size === lista.length;
@@ -29,15 +14,16 @@ const alergiaSchema = z.object({
 const enfermedadSchema = z.object({
   id: z.string().uuid().optional(),
   nombre: z.string().trim().min(1, 'La enfermedad necesita un nombre').max(120),
-  notas: z.string().trim().max(500).nullish(),
+  notas: z.string().trim().max(1000).nullish(),
 });
 
 export const guardarFichaSchema = z
   .object({
-    tipoSanguineo: z.enum(tiposApp, { errorMap: () => ({ message: 'Selecciona el tipo sanguíneo (o “No lo sé”)' }) }),
+    tipoSanguineo: z.enum(tiposSanguineos, { errorMap: () => ({ message: 'Selecciona el tipo sanguíneo (o “No lo sé”)' }) }),
     alergias: z.array(alergiaSchema).max(50).default([]).refine(sinRepetidos, 'Hay alergias repetidas'),
     enfermedades: z.array(enfermedadSchema).max(50).default([]).refine(sinRepetidos, 'Hay enfermedades repetidas'),
-    observaciones: z.string().trim().max(1000).nullish(),
+    medicoTratante: z.string().trim().max(120).nullish(),
+    institucionSalud: z.string().trim().max(120).nullish(),
   })
   .strip();
 
