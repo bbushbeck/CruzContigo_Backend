@@ -61,3 +61,55 @@ model MiembroRed {
   @@unique([personaId, usuarioId])
   @@map("miembro_red")
 }
+
+enum RolPreferido {
+  cuidador
+  recibe_cuidados
+}
+
+enum Plataforma {
+  ios
+  android
+  web
+}
+
+model Usuario {
+  id                String              @id @default(uuid()) @db.Char(36)
+  telefono          String              @unique @db.VarChar(20)
+  nombre            String              @default("") @db.VarChar(120)
+  fotoUrl           String?             @map("foto_url") @db.VarChar(500)
+  rolPreferido      RolPreferido        @default(cuidador) @map("rol_preferido")
+  preferenciasNotif Json?               @map("preferencias_notif")
+  modoLecturaFacil  Boolean             @default(false) @map("modo_lectura_facil")
+  creadoEn          DateTime            @default(now()) @map("creado_en") @db.DateTime(3)
+  eliminadoEn       DateTime?           @map("eliminado_en") @db.DateTime(3)
+  sesiones          SesionDispositivo[]
+
+  @@map("usuario")
+}
+
+model VerificacionOtp {
+  id           String    @id @default(uuid()) @db.Char(36)
+  telefono     String    @db.VarChar(20)
+  codigoHash   String    @map("codigo_hash") @db.Char(64)
+  intentos     Int       @default(0) @db.SmallInt
+  reenvios     Int       @default(0) @db.SmallInt
+  expiraEn     DateTime  @map("expira_en") @db.DateTime(3)
+  verificadoEn DateTime? @map("verificado_en") @db.DateTime(3)
+
+  @@map("verificacion_otp")
+}
+
+model SesionDispositivo {
+  id                String    @id @default(uuid()) @db.Char(36)
+  usuarioId         String    @map("usuario_id") @db.Char(36)
+  nombreDispositivo String?   @map("nombre_dispositivo") @db.VarChar(80)
+  plataforma        Plataforma
+  pushToken         String?   @map("push_token") @db.Text
+  refreshTokenHash  String    @map("refresh_token_hash") @db.Char(64)
+  ultimoAcceso      DateTime? @map("ultimo_acceso") @db.DateTime(3)
+  revocadaEn        DateTime? @map("revocada_en") @db.DateTime(3)
+  usuario           Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("sesion_dispositivo")
+}
