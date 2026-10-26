@@ -2,6 +2,9 @@
 
 API de CruzContigo en Node.js, Express, TypeScript y Prisma sobre MySQL.
 
+El módulo de medicamentos usa la tabla existente de Aiven. Sus endpoints,
+campos y pruebas se documentan en [docs/medicamentos.md](docs/medicamentos.md).
+
 ## Requisitos
 
 - Node.js 20 o superior
