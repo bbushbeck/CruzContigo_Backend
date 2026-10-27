@@ -76,4 +76,4 @@ Ejemplo de cuerpo para `PUT /familiares/:id/ficha-medica` (las alergias y enferm
 
 ## Datos de prueba
 
-`npx prisma db seed` crea personas ficticias. Úsalo solo en una base local, no en la compartida.
+`npx prisma db seed` crea personas ficticias.
