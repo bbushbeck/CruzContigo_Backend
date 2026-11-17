@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test:medicamentos": "tsx --test test/medicamentos.integration.test.ts",
     "prisma:generate": "prisma generate",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "test:recordatorios": "tsx --test test/recordatorios.integration.test.ts"
   },
   "dependencies": {
     "@prisma/adapter-mariadb": "^6.19.3",

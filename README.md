@@ -77,3 +77,27 @@ Ejemplo de cuerpo para `PUT /familiares/:id/ficha-medica` (las alergias y enferm
 ## Datos de prueba
 
 `npx prisma db seed` crea personas ficticias.
+
+## Recordatorios
+
+Para una base local nueva, inicializa el esquema Prisma. En una base existente,
+revisa y ejecuta una vez [el SQL aditivo](src/database/prisma/sql/crear-recordatorios.sql)
+antes de desplegar la API. La tabla nueva referencia `usuario.id` y
+`persona_cuidada.id`. Verifica que las dos columnas sean `CHAR(36)` con
+`utf8mb4_unicode_ci` o adapta la colación de las columnas foráneas en el SQL
+a las de la instalación. Evita aplicar el esquema Prisma completo a Aiven.
+
+| Método | Ruta | Resultado |
+| --- | --- | --- |
+| GET | `/recordatorios` | 200, lista de la cuenta ordenada por fecha |
+| POST | `/recordatorios` | 201, crea un recordatorio |
+| PUT | `/recordatorios/:id` | 200, reemplaza los campos del recordatorio |
+| DELETE | `/recordatorios/:id` | 204, elimina el recordatorio |
+
+Las cuatro operaciones requieren el token de sesión en `Authorization: Bearer`.
+POST y PUT reciben `familiarID` (UUID), `titulo`, `fecha` (ISO 8601 con zona)
+y `completado` (booleano, por defecto `false`). La API devuelve también el `id`
+del recordatorio. Los recordatorios se guardan en la cuenta que los crea.
+
+Ejecuta `npm run test:recordatorios` con `TEST_DATABASE_URL` apuntando a una
+base local terminada en `_test` con el esquema inicializado.
