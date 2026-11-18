@@ -80,24 +80,38 @@ Ejemplo de cuerpo para `PUT /familiares/:id/ficha-medica` (las alergias y enferm
 
 ## Recordatorios
 
-Para una base local nueva, inicializa el esquema Prisma. En una base existente,
-revisa y ejecuta una vez [el SQL aditivo](src/database/prisma/sql/crear-recordatorios.sql)
-antes de desplegar la API. La tabla nueva referencia `usuario.id` y
-`persona_cuidada.id`. Verifica que las dos columnas sean `CHAR(36)` con
-`utf8mb4_unicode_ci` o adapta la colación de las columnas foráneas en el SQL
-a las de la instalación. Evita aplicar el esquema Prisma completo a Aiven.
+La API usa la tabla `recordatorio` existente en Aiven. Genera el cliente con
+`npm ci` y reinicia la API. En Aiven basta con el esquema existente. En una
+base local nueva, inicialízalo con Prisma como parte de la instalación.
 
 | Método | Ruta | Resultado |
 | --- | --- | --- |
-| GET | `/recordatorios` | 200, lista de la cuenta ordenada por fecha |
+| GET | `/recordatorios` | 200, lista de los familiares accesibles, ordenada por fecha |
 | POST | `/recordatorios` | 201, crea un recordatorio |
-| PUT | `/recordatorios/:id` | 200, reemplaza los campos del recordatorio |
+| PUT | `/recordatorios/:id` | 200, actualiza el recordatorio |
 | DELETE | `/recordatorios/:id` | 204, elimina el recordatorio |
 
-Las cuatro operaciones requieren el token de sesión en `Authorization: Bearer`.
-POST y PUT reciben `familiarID` (UUID), `titulo`, `fecha` (ISO 8601 con zona)
-y `completado` (booleano, por defecto `false`). La API devuelve también el `id`
-del recordatorio. Los recordatorios se guardan en la cuenta que los crea.
+Las cuatro operaciones requieren el token en `Authorization: Bearer`. Se
+requiere ser titular del familiar o tener una membresía activa y vigente en
+su red de cuidado. Las escrituras requieren además permiso de edición
+(titular, administrador o cocuidador). Al crear familiares con ese token,
+la API vincula a la cuenta como administradora. Un familiar antiguo sin
+vínculo debe asociarse mediante la red de cuidado.
+
+POST y PUT reciben `familiarID`, `titulo`, `fecha` ISO 8601 con zona y
+`completado` (por defecto `false`). Los avisos de una sola vez de la app se
+guardan como tareas, con su fecha UTC y estado en una regla versionada:
+
+```text
+X-CRUZCONTIGO-PROGRAMACION:1
+DTSTART:20270210T153000Z
+X-CRUZCONTIGO-ESTADO:PENDIENTE
+```
+
+Completar desactiva el aviso y guarda su estado. La API actual consulta y
+modifica solo los recordatorios de ese formato. Las notificaciones de la app
+se programan en iOS. La tabla `notificacion` puede registrar envíos y lecturas
+cuando exista un servicio de notificaciones.
 
 Ejecuta `npm run test:recordatorios` con `TEST_DATABASE_URL` apuntando a una
-base local terminada en `_test` con el esquema inicializado.
+base local con el esquema inicializado y un nombre terminado en `_test`.

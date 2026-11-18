@@ -79,7 +79,7 @@ export async function verificarCodigo(challengeId: string, code: string) {
 
 export async function usuarioDeSesion(authorization?: string) {
   const token = /^Bearer ([A-Za-z0-9_-]+)$/i.exec(authorization ?? '')?.[1];
-  if (!token) throw new HttpError(401, 'Inicia sesión para consultar tus recordatorios');
+  if (!token) throw new HttpError(401, 'Inicia sesión para continuar');
 
   const sesion = await prisma.sesionDispositivo.findFirst({
     where: { refreshTokenHash: hashToken(token), revocadaEn: null, usuario: { eliminadoEn: null } },

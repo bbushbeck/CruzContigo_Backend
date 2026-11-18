@@ -53,7 +53,7 @@ model PersonaCuidada {
   alergias         Alergia[]
   padecimientos    Padecimiento[]
   medicamentos     Medicamento[]
-  recordatorios    RecordatorioUsuario[]
+  recordatorios    Recordatorio[]
 
   @@map("persona_cuidada")
 }
@@ -95,7 +95,6 @@ model Usuario {
   creadoEn          DateTime            @default(now()) @map("creado_en") @db.DateTime(3)
   eliminadoEn       DateTime?           @map("eliminado_en") @db.DateTime(3)
   sesiones          SesionDispositivo[]
-  recordatorios     RecordatorioUsuario[]
 
   @@map("usuario")
 }
@@ -177,21 +176,34 @@ model Medicamento {
   umbralResurtidoDias  Int            @default(5) @map("umbral_resurtido_dias") @db.SmallInt
   persona             PersonaCuidada @relation(fields: [personaId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_medicamento_persona_id")
 
+  recordatorios       Recordatorio[]
+
   @@index([personaId], map: "fk_medicamento_persona_id")
   @@map("medicamento")
 }
 
-model RecordatorioUsuario {
-  id         String        @id @default(uuid()) @db.Char(36)
-  usuarioId  String        @map("usuario_id") @db.Char(36)
-  personaId  String        @map("persona_id") @db.Char(36)
-  titulo     String        @db.VarChar(120)
-  fecha      DateTime      @db.DateTime(0)
-  completado Boolean       @default(false)
-  usuario    Usuario       @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  persona    PersonaCuidada @relation(fields: [personaId], references: [id], onDelete: Cascade)
+enum TipoRecordatorio {
+  medicamento
+  cita
+  tarea
+  otro
+}
 
-  @@index([usuarioId, fecha])
-  @@index([personaId])
-  @@map("recordatorio_usuario")
+model Recordatorio {
+  id               String        @id @default(dbgenerated("(uuid())")) @db.Char(36)
+  personaId        String        @map("persona_id") @db.Char(36)
+  medicamentoId    String?       @map("medicamento_id") @db.Char(36)
+  citaId           String?       @map("cita_id") @db.Char(36)
+  tipo             TipoRecordatorio
+  titulo           String        @db.VarChar(120)
+  reglaRecurrencia String        @map("regla_recurrencia") @db.VarChar(255)
+  margenOmisionMin Int           @default(30) @map("margen_omision_min") @db.SmallInt
+  activo           Boolean       @default(true)
+  persona          PersonaCuidada @relation(fields: [personaId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_recordatorio_persona_id")
+  medicamento      Medicamento?   @relation(fields: [medicamentoId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_recordatorio_medicamento_id")
+
+  @@index([medicamentoId], map: "fk_recordatorio_medicamento_id")
+  @@index([citaId], map: "fk_recordatorio_cita_id")
+  @@index([personaId, activo], map: "ix_recordatorio_persona_activo")
+  @@map("recordatorio")
 }

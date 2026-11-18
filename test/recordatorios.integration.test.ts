@@ -13,7 +13,7 @@ process.env.DATABASE_URL = databaseURL;
 process.env.DB_CA_PATH = '';
 process.env.OTP_HMAC_SECRET = randomBytes(32).toString('hex');
 
-describe('Recordatorios: CRUD privado por sesión', () => {
+describe('Recordatorios: CRUD con acceso por red de cuidado', () => {
   const familiarID = randomUUID();
   const usuarios = Array.from({ length: 2 }, () => ({
     id: randomUUID(),
@@ -39,9 +39,6 @@ describe('Recordatorios: CRUD privado por sesión', () => {
         },
       });
     }
-    await prisma.personaCuidada.create({
-      data: { id: familiarID, nombre: 'Familiar de prueba', fechaNacimiento: new Date('1980-01-01'), tipoCuidado: 'otro' },
-    });
     server = crearApp().listen(0, '127.0.0.1');
     await new Promise<void>((resolve, reject) => {
       server.once('listening', resolve);
@@ -50,6 +47,12 @@ describe('Recordatorios: CRUD privado por sesión', () => {
     const address = server.address();
     assert(address && typeof address !== 'string');
     url = `http://127.0.0.1:${address.port}`;
+    const familiar = await request('/familiares', 'POST', usuarios[0].token, {
+      id: familiarID, nombre: 'Familiar', apellidos: 'De prueba', fechaNacimiento: '1980-01-01T12:00:00Z',
+      tipoCuidado: 'otro', parentesco: 'otro',
+    });
+    assert.equal(familiar.status, 201);
+    assert.equal(familiar.data.id, familiarID);
   });
 
   after(async () => {
@@ -90,14 +93,36 @@ describe('Recordatorios: CRUD privado por sesión', () => {
     const actualizado = { ...creado.data, titulo: 'Cita de seguimiento', fecha: '2027-02-11T15:30:00Z', completado: true };
     const path = `/recordatorios/${id}`;
     assert.deepEqual(await request(path, 'PUT', token, actualizado), { status: 200, data: actualizado });
-    assert.equal((await prisma.recordatorioUsuario.findUniqueOrThrow({ where: { id } })).completado, true);
+    const fila = await prisma.recordatorio.findUniqueOrThrow({ where: { id } });
+    assert.equal(fila.activo, false);
+    assert.match(fila.reglaRecurrencia, /DTSTART:20270211T153000Z\r\nX-CRUZCONTIGO-ESTADO:COMPLETADO$/);
 
     const ajeno = usuarios[1].token;
     assert.deepEqual(await request('/recordatorios', 'GET', ajeno), { status: 200, data: [] });
     assert.equal((await request(path, 'PUT', ajeno, actualizado)).status, 404);
     assert.equal((await request(path, 'DELETE', ajeno)).status, 404);
+    assert.equal((await request('/recordatorios', 'POST', ajeno, datos)).status, 404);
+    await prisma.miembroRed.create({
+      data: { personaId: familiarID, usuarioId: usuarios[1].id, estado: 'activo', rol: 'solo_lectura' },
+    });
+    assert.deepEqual(await request('/recordatorios', 'GET', ajeno), { status: 200, data: [actualizado] });
+    assert.equal((await request(path, 'PUT', ajeno, actualizado)).status, 404);
+    assert.equal((await request(path, 'DELETE', ajeno)).status, 404);
     assert.equal((await request(path, 'DELETE', token)).status, 204);
     assert.deepEqual(await request('/recordatorios', 'GET', token), { status: 200, data: [] });
+  });
+
+  it('preserva reglas ajenas al formato de la app', async () => {
+    const { token } = usuarios[0];
+    const reglaRecurrencia = 'FREQ=DAILY;BYHOUR=9';
+    const fila = await prisma.recordatorio.create({
+      data: { id: randomUUID(), personaId: familiarID, titulo: 'Otro sistema', tipo: 'tarea', reglaRecurrencia },
+    });
+    assert.deepEqual(await request('/recordatorios', 'GET', token), { status: 200, data: [] });
+    const path = `/recordatorios/${fila.id}`;
+    assert.equal((await request(path, 'PUT', token, { familiarID, titulo: 'Cambio', fecha: '2027-02-11T15:30:00Z' })).status, 404);
+    assert.equal((await request(path, 'DELETE', token)).status, 404);
+    assert.equal((await prisma.recordatorio.findUniqueOrThrow({ where: { id: fila.id } })).reglaRecurrencia, reglaRecurrencia);
   });
 
   it('rechaza sesiones inválidas, datos inválidos y familiares inexistentes', async () => {
