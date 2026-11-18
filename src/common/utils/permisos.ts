@@ -81,4 +81,5 @@ export async function requerirGestor(personaId: string, usuarioId: string) {
   if (!gestores.includes(usuarioId)) {
     throw new HttpError(403, 'Solo la persona titular o su responsable puede autorizar o revocar accesos');
   }
+  return titulares.length ? ('titular' as const) : ('administrador' as const);
 }

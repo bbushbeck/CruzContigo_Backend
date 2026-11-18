@@ -3,9 +3,9 @@ import { prisma } from '../../database/cliente';
 import { HttpError } from '../../common/utils/http-error';
 import { isoSinMilisegundos } from '../../common/utils/fechas';
 import type { Sesion } from '../../common/utils/autenticacion';
-import { requerirGestor, tieneConvenioVigente } from '../../common/utils/permisos';
+import { requerirAcceso, requerirGestor, tieneConvenioVigente } from '../../common/utils/permisos';
 import { telefonoValido } from '../auth/auth.service';
-import { DIAS_PROFESIONAL_PREDETERMINADOS, VERSION_AVISO, type AutorizarDto } from './accesos.schema';
+import { DIAS_PROFESIONAL_PREDETERMINADOS, VERSION_AVISO, type AutorizarDto, type QrDto } from './accesos.schema';
 
 const DIA_MS = 24 * 60 * 60 * 1000;
 
@@ -145,4 +145,46 @@ export async function consentimientos(personaId: string, usuarioId: string) {
     otorgadoPor: persona(r.otorgadoPor),
     usuario: persona(r.usuarioId),
   }));
+}
+
+// El último registro de QR manda: compartir_qr lo habilita y retirar_qr lo apaga.
+async function ultimoQR(personaId: string) {
+  return prisma.consentimiento.findFirst({
+    where: { personaId, accion: { in: ['compartir_qr', 'retirar_qr'] } },
+    orderBy: { creadoEn: 'desc' },
+  });
+}
+
+function aEstadoQR(registro: Awaited<ReturnType<typeof ultimoQR>>) {
+  return {
+    consentido: registro?.accion === 'compartir_qr',
+    fecha: registro ? isoSinMilisegundos(registro.creadoEn) : null,
+    versionAviso: VERSION_AVISO,
+  };
+}
+
+// Cualquier integrante de la red puede saber si el QR está permitido (para mostrarlo
+// sin conexión). Un profesional bajo convenio no lo necesita.
+export async function estadoQR(personaId: string, usuarioId: string) {
+  await requerirAcceso(personaId, usuarioId);
+  return aEstadoQR(await ultimoQR(personaId));
+}
+
+export async function cambiarQR(personaId: string, datos: QrDto, sesion: Sesion) {
+  const rol = await requerirGestor(personaId, sesion.usuarioId);
+  const actual = await ultimoQR(personaId);
+  if ((actual?.accion === 'compartir_qr') === datos.consentido) return aEstadoQR(actual);
+
+  const registro = await prisma.consentimiento.create({
+    data: {
+      personaId,
+      otorgadoPor: sesion.usuarioId,
+      usuarioId: sesion.usuarioId,
+      accion: datos.consentido ? 'compartir_qr' : 'retirar_qr',
+      rol,
+      versionAviso: datos.versionAviso ?? VERSION_AVISO,
+      sesionId: sesion.sesionId,
+    },
+  });
+  return aEstadoQR(registro);
 }

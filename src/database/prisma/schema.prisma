@@ -167,6 +167,8 @@ model Padecimiento {
 enum AccionConsentimiento {
   autorizar
   revocar
+  compartir_qr
+  retirar_qr
 }
 
 // Evidencia de consentimiento (RF-31). Solo inserción: no se actualiza ni se borra.

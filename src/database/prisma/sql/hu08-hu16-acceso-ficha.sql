@@ -1,4 +1,5 @@
 -- HU-08 (RF-30, RF-31) y HU-16 (RF-38): permisos, consentimiento y acceso profesional.
+-- HU-19 (RF-28): el consentimiento del código QR de emergencia usa la misma tabla.
 -- Ejecutar una sola vez en Aiven. En una base local nueva basta con `npx prisma db push`.
 
 ALTER TABLE `miembro_red`
@@ -9,7 +10,7 @@ CREATE TABLE IF NOT EXISTS `consentimiento` (
   `persona_id` CHAR(36) NOT NULL,
   `otorgado_por` CHAR(36) NOT NULL,
   `usuario_id` CHAR(36) NOT NULL,
-  `accion` ENUM('autorizar', 'revocar') NOT NULL,
+  `accion` ENUM('autorizar', 'revocar', 'compartir_qr', 'retirar_qr') NOT NULL,
   `rol` ENUM('titular', 'administrador', 'cocuidador', 'solo_lectura', 'temporal', 'profesional') NOT NULL,
   `version_aviso` VARCHAR(20) NOT NULL,
   `sesion_id` CHAR(36) NULL,

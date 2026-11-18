@@ -171,6 +171,27 @@ describe('Accesos a la ficha: autorización, revocación y profesionales (HU-08,
     assert.equal((await request(fichaPath, 'GET', undefined, 'profesional')).status, 403);
   });
 
+  it('el código QR de emergencia solo existe con consentimiento (HU-19)', async () => {
+    const qrPath = `${accesosPath}/qr`;
+    const inicial = await request(qrPath, 'GET', undefined, 'admin');
+    assert.equal(inicial.status, 200);
+    assert.equal(inicial.data.consentido, false);
+
+    assert.equal((await request(qrPath, 'PUT', { consentido: true, versionAviso }, 'admin')).status, 400);
+    assert.equal((await request(qrPath, 'PUT', { consentido: true, versionAviso, aceptaAviso: true }, 'cuidador')).status, 403);
+
+    const activado = await request(qrPath, 'PUT', { consentido: true, versionAviso, aceptaAviso: true }, 'admin');
+    assert.equal(activado.status, 200);
+    assert.equal(activado.data.consentido, true);
+    const evidencia = await prisma.consentimiento.findFirstOrThrow({ where: { personaId, accion: 'compartir_qr' } });
+    assert.equal(evidencia.otorgadoPor, usuarios.admin.id);
+    assert.equal(evidencia.rol, 'administrador');
+
+    const retirado = await request(qrPath, 'PUT', { consentido: false }, 'admin');
+    assert.equal(retirado.data.consentido, false);
+    assert.equal((await request(qrPath, 'GET', undefined, 'admin')).data.consentido, false);
+  });
+
   it('si la persona titular tiene cuenta, solo ella administra los accesos', async () => {
     await prisma.miembroRed.create({ data: { personaId, usuarioId: usuarios.titular.id, rol: 'titular', estado: 'activo' } });
     assert.equal((await request(accesosPath, 'GET', undefined, 'admin')).status, 403);

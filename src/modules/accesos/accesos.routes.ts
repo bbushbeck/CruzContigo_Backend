@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { requerirSesion } from '../../common/utils/autenticacion';
 import { idSchema } from '../personas/personas.schema';
-import { autorizarSchema } from './accesos.schema';
+import { autorizarSchema, qrSchema } from './accesos.schema';
 import * as accesos from './accesos.service';
 
 export const accesosRouter = Router({ mergeParams: true });
@@ -14,6 +14,17 @@ accesosRouter.get<{ id: string }>('/', async (req, res) => {
 accesosRouter.get<{ id: string }>('/consentimientos', async (req, res) => {
   const { usuarioId } = await requerirSesion(req);
   res.json(await accesos.consentimientos(idSchema.parse(req.params.id), usuarioId));
+});
+
+accesosRouter.get<{ id: string }>('/qr', async (req, res) => {
+  const { usuarioId } = await requerirSesion(req);
+  res.json(await accesos.estadoQR(idSchema.parse(req.params.id), usuarioId));
+});
+
+accesosRouter.put<{ id: string }>('/qr', async (req, res) => {
+  const sesion = await requerirSesion(req);
+  const datos = qrSchema.parse(req.body);
+  res.json(await accesos.cambiarQR(idSchema.parse(req.params.id), datos, sesion));
 });
 
 accesosRouter.post<{ id: string }>('/', async (req, res) => {

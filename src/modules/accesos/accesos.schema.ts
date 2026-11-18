@@ -28,3 +28,22 @@ export const autorizarSchema = z
   });
 
 export type AutorizarDto = z.infer<typeof autorizarSchema>;
+
+// HU-19: el código QR de la ficha de emergencia solo existe con consentimiento.
+export const qrSchema = z
+  .object({
+    consentido: z.boolean({ required_error: 'Indica si se comparte el código QR' }),
+    versionAviso: z.string().optional(),
+    aceptaAviso: z.boolean().optional(),
+  })
+  .strip()
+  .refine((d) => !d.consentido || d.aceptaAviso === true, {
+    message: 'Debes aceptar el aviso de privacidad',
+    path: ['aceptaAviso'],
+  })
+  .refine((d) => !d.consentido || d.versionAviso === VERSION_AVISO, {
+    message: 'El aviso de privacidad cambió; revísalo de nuevo',
+    path: ['versionAviso'],
+  });
+
+export type QrDto = z.infer<typeof qrSchema>;

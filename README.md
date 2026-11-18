@@ -84,6 +84,8 @@ La persona titular decide quién consulta sus datos. Si no tiene cuenta propia, 
 | POST | `/familiares/:id/accesos` | 201, autoriza a una cuenta registrada por su teléfono |
 | DELETE | `/familiares/:id/accesos/:miembroId` | 204, revoca el acceso |
 | GET | `/familiares/:id/accesos/consentimientos` | 200, historial de autorizaciones y revocaciones |
+| GET | `/familiares/:id/accesos/qr` | 200, si el código QR de la ficha de emergencia está permitido |
+| PUT | `/familiares/:id/accesos/qr` | 200, la persona titular o su responsable lo permite o lo retira |
 
 ```json
 { "telefono": "8112345678", "rol": "cocuidador", "relacion": "hija", "versionAviso": "2026-11", "aceptaAviso": true }
@@ -93,6 +95,7 @@ La persona titular decide quién consulta sus datos. Si no tiene cuenta propia, 
 - Cada autorización o revocación guarda en `consentimiento` la versión del aviso, la fecha, quién la otorga, a quién y la sesión (RF-31).
 - Los permisos se consultan en la base en cada petición, sin caché, así que una revocación se aplica desde la siguiente solicitud (RNF-05).
 - Un `profesional` solo puede autorizarse si su cuenta está en `profesional_convenio` con un convenio activo y vigente en `convenio_institucional`. Solo lee la ficha médica: no la edita, no ve recordatorios ni el teléfono de la persona. Cada consulta queda en `bitacora_acceso` (RF-38). Si el convenio vence, pierde el acceso.
+- El código QR de la ficha de emergencia (HU-19) solo existe con consentimiento. `PUT /qr` recibe `{ "consentido": true, "versionAviso": "2026-11", "aceptaAviso": true }` o `{ "consentido": false }`, y cada cambio queda en `consentimiento` como `compartir_qr` o `retirar_qr`.
 - `consentimiento` y `bitacora_acceso` son de solo inserción.
 
 En Aiven, ejecuta una vez `src/database/prisma/sql/hu08-hu16-acceso-ficha.sql`. En una base local, `npx prisma db push`. Pruebas: `npm run test:accesos` con `TEST_DATABASE_URL`.
