@@ -13,7 +13,7 @@ function hashToken(token: string) {
   return createHash('sha256').update(token).digest('hex');
 }
 
-function telefonoValido(phoneNumber: string) {
+export function telefonoValido(phoneNumber: string) {
   const digitos = phoneNumber.replace(/\D/g, '');
   if (digitos.length === 10) return `+52${digitos}`;
   if (phoneNumber.trim().startsWith('+') && digitos.length >= 11 && digitos.length <= 15) return `+${digitos}`;
