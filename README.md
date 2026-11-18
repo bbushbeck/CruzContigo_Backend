@@ -91,12 +91,16 @@ base local nueva, inicialízalo con Prisma como parte de la instalación.
 | PUT | `/recordatorios/:id` | 200, actualiza el recordatorio |
 | DELETE | `/recordatorios/:id` | 204, elimina el recordatorio |
 
-Las cuatro operaciones requieren el token en `Authorization: Bearer`. Se
-requiere ser titular del familiar o tener una membresía activa y vigente en
-su red de cuidado. Las escrituras requieren además permiso de edición
-(titular, administrador o cocuidador). Al crear familiares con ese token,
-la API vincula a la cuenta como administradora. Un familiar antiguo sin
-vínculo debe asociarse mediante la red de cuidado.
+Las cuatro operaciones requieren el token en `Authorization: Bearer`. En un
+familiar vinculado, la cuenta titular y los miembros activos pueden consultar
+sus avisos compartidos. Titulares, administradores y cocuidadores pueden
+modificarlos. Al registrar un familiar con una sesión iniciada, la API vincula
+a la cuenta como administradora.
+
+Un familiar antiguo sin titular, creador ni miembros admite avisos personales.
+Cada aviso queda privado para la cuenta que lo creó, incluso si el familiar se
+vincula después. Se guarda en la misma tabla con una regla de versión 2 que
+incluye `X-CRUZCONTIGO-USUARIO` con el identificador de esa cuenta.
 
 POST y PUT reciben `familiarID`, `titulo`, `fecha` ISO 8601 con zona y
 `completado` (por defecto `false`). Los avisos de una sola vez de la app se

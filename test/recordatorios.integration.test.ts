@@ -13,7 +13,7 @@ process.env.DATABASE_URL = databaseURL;
 process.env.DB_CA_PATH = '';
 process.env.OTP_HMAC_SECRET = randomBytes(32).toString('hex');
 
-describe('Recordatorios: CRUD con acceso por red de cuidado', () => {
+describe('Recordatorios: acceso a avisos compartidos y personales', () => {
   const familiarID = randomUUID();
   const usuarios = Array.from({ length: 2 }, () => ({
     id: randomUUID(),
@@ -123,6 +123,41 @@ describe('Recordatorios: CRUD con acceso por red de cuidado', () => {
     assert.equal((await request(path, 'PUT', token, { familiarID, titulo: 'Cambio', fecha: '2027-02-11T15:30:00Z' })).status, 404);
     assert.equal((await request(path, 'DELETE', token)).status, 404);
     assert.equal((await prisma.recordatorio.findUniqueOrThrow({ where: { id: fila.id } })).reglaRecurrencia, reglaRecurrencia);
+  });
+
+  it('permite usar un familiar antiguo y aísla cada aviso por cuenta', async () => {
+    const familiarAntiguoID = randomUUID();
+    const familiar = await request('/familiares', 'POST', undefined, {
+      id: familiarAntiguoID, nombre: 'Familiar', apellidos: 'Antiguo', fechaNacimiento: '1980-01-01T12:00:00Z',
+      tipoCuidado: 'otro', parentesco: 'otro',
+    });
+    assert.equal(familiar.status, 201);
+
+    try {
+      const [{ token }, { token: otroToken }] = usuarios;
+      const datos = { familiarID: familiarAntiguoID, titulo: 'Tomar medicamento', fecha: '2027-02-10T15:30:00Z' };
+      const creado = await request('/recordatorios', 'POST', token, datos);
+      assert.equal(creado.status, 201);
+      const path = `/recordatorios/${creado.data.id}`;
+      assert.deepEqual(await request('/recordatorios', 'GET', token), { status: 200, data: [creado.data] });
+      assert.deepEqual(await request('/recordatorios', 'GET', otroToken), { status: 200, data: [] });
+      assert.equal((await request(path, 'PUT', otroToken, datos)).status, 404);
+      assert.equal((await request(path, 'DELETE', otroToken)).status, 404);
+
+      const actualizado = { ...creado.data, titulo: 'Aviso editado', completado: true };
+      assert.deepEqual(await request(path, 'PUT', token, actualizado), { status: 200, data: actualizado });
+
+      // Un vínculo futuro al familiar conserva la privacidad del aviso ya guardado.
+      await prisma.miembroRed.create({
+        data: { personaId: familiarAntiguoID, usuarioId: usuarios[1].id, rol: 'administrador', estado: 'activo' },
+      });
+      assert.deepEqual(await request('/recordatorios', 'GET', otroToken), { status: 200, data: [] });
+      assert.equal((await request(path, 'DELETE', otroToken)).status, 404);
+      assert.equal((await request(path, 'DELETE', token)).status, 204);
+      assert.deepEqual(await request('/recordatorios', 'GET', token), { status: 200, data: [] });
+    } finally {
+      await prisma.personaCuidada.delete({ where: { id: familiarAntiguoID } });
+    }
   });
 
   it('rechaza sesiones inválidas, datos inválidos y familiares inexistentes', async () => {
