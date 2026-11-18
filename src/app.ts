@@ -3,6 +3,7 @@ import { manejadorErrores, rutaNoEncontrada } from './common/filters/errores';
 import { accesosRouter } from './modules/accesos/accesos.routes';
 import { authRouter } from './modules/auth/auth.routes';
 import { contactosRouter } from './modules/contactos/contactos.routes';
+import { diarioRouter } from './modules/diario/diario.routes';
 import { fichaMedicaRouter } from './modules/ficha-medica/ficha-medica.routes';
 import { medicamentosRouter } from './modules/medicamentos/medicamentos.routes';
 import { recordatoriosRouter } from './modules/recordatorios/recordatorios.routes';
@@ -25,6 +26,7 @@ export function crearApp() {
   app.use('/familiares/:id/red', redRouter);
   app.use('/familiares/:id/invitaciones', invitacionesPersonaRouter);
   app.use('/familiares/:id/contactos', contactosRouter);
+  app.use('/familiares/:id/diario', diarioRouter);
   app.use('/familiares/:id/medicamentos', medicamentosRouter);
   app.use('/familiares', personasRouter);
   app.use('/recordatorios', recordatoriosRouter);
