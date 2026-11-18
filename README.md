@@ -74,6 +74,29 @@ Ejemplo de cuerpo para `PUT /familiares/:id/ficha-medica` (las alergias y enferm
 
 `tipoSanguineo` acepta `A+`, `A-`, `B+`, `B-`, `AB+`, `AB-`, `O+`, `O-` o `desconocido`. Al guardar, `X-Usuario-Id` se registra como quien actualizó la ficha.
 
+## Accesos a la ficha (HU-08, HU-16)
+
+La persona titular decide quién consulta sus datos. Si no tiene cuenta propia, lo decide su responsable: los administradores de su red. Todas las rutas requieren `Authorization: Bearer`.
+
+| Método | Ruta | Resultado |
+|---|---|---|
+| GET | `/familiares/:id/accesos` | 200, versión vigente del aviso y miembros con acceso |
+| POST | `/familiares/:id/accesos` | 201, autoriza a una cuenta registrada por su teléfono |
+| DELETE | `/familiares/:id/accesos/:miembroId` | 204, revoca el acceso |
+| GET | `/familiares/:id/accesos/consentimientos` | 200, historial de autorizaciones y revocaciones |
+
+```json
+{ "telefono": "8112345678", "rol": "cocuidador", "relacion": "hija", "versionAviso": "2026-11", "aceptaAviso": true }
+```
+
+- `rol` acepta `cocuidador`, `solo_lectura` o `profesional`. `diasVigencia` es opcional. Un acceso profesional dura 7 días por defecto y 30 como máximo.
+- Cada autorización o revocación guarda en `consentimiento` la versión del aviso, la fecha, quién la otorga, a quién y la sesión (RF-31).
+- Los permisos se consultan en la base en cada petición, sin caché, así que una revocación se aplica desde la siguiente solicitud (RNF-05).
+- Un `profesional` solo puede autorizarse si su cuenta está en `profesional_convenio` con un convenio activo y vigente en `convenio_institucional`. Solo lee la ficha médica: no la edita, no ve recordatorios ni el teléfono de la persona. Cada consulta queda en `bitacora_acceso` (RF-38). Si el convenio vence, pierde el acceso.
+- `consentimiento` y `bitacora_acceso` son de solo inserción.
+
+En Aiven, ejecuta una vez `src/database/prisma/sql/hu08-hu16-acceso-ficha.sql`. En una base local, `npx prisma db push`. Pruebas: `npm run test:accesos` con `TEST_DATABASE_URL`.
+
 ## Datos de prueba
 
 `npx prisma db seed` crea personas ficticias.

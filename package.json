@@ -12,7 +12,8 @@
     "test:ficha": "tsx --test test/ficha-medica.integration.test.ts",
     "prisma:generate": "prisma generate",
     "postinstall": "prisma generate",
-    "test:recordatorios": "tsx --test test/recordatorios.integration.test.ts"
+    "test:recordatorios": "tsx --test test/recordatorios.integration.test.ts",
+    "test:accesos": "tsx --test test/accesos.integration.test.ts"
   },
   "dependencies": {
     "@prisma/adapter-mariadb": "^6.19.3",
