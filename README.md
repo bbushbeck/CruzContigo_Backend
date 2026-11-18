@@ -100,6 +100,37 @@ La persona titular decide quién consulta sus datos. Si no tiene cuenta propia, 
 
 En Aiven, ejecuta una vez `src/database/prisma/sql/hu08-hu16-acceso-ficha.sql`. En una base local, `npx prisma db push`. Pruebas: `npm run test:accesos` con `TEST_DATABASE_URL`.
 
+## Red de cuidado (HU-17, HU-26), contactos (RF-15) y diario (HU-13)
+
+Todas las rutas requieren `Authorization: Bearer`.
+
+**Invitaciones.** La persona titular o su responsable invita con rol `administrador`, `cocuidador`, `solo_lectura` o `temporal`.
+
+| Método | Ruta | Resultado |
+|---|---|---|
+| GET | `/familiares/:id/red` | 200, integrantes; para quien administra, también las invitaciones pendientes |
+| POST | `/familiares/:id/invitaciones` | 201, crea la invitación y devuelve `codigo` y `enlace` (`cruzcontigo://invitacion/CODIGO`) |
+| DELETE | `/familiares/:id/invitaciones/:invitacionId` | 204, cancela una invitación pendiente |
+| GET | `/invitaciones` | 200, invitaciones pendientes para el teléfono de la sesión |
+| POST | `/invitaciones/consultar` | 200, vista previa de una invitación por `codigo` |
+| POST | `/invitaciones/aceptar` | 200, acepta con `codigo` o `invitacionId` |
+| DELETE | `/invitaciones/:invitacionId` | 204, rechaza una invitación por teléfono |
+
+```json
+{ "telefono": "8112345678", "rol": "temporal", "accesoHasta": "2026-12-01T23:59:00Z", "permisoFicha": false, "versionAviso": "2026-11", "aceptaAviso": true }
+```
+
+- Sin `telefono`, la invitación es solo por enlace: la usa quien tenga el código. Con `telefono`, solo ese número.
+- El código es de un solo uso, vence en 7 días y en la base solo se guarda su hash. Si quien invitó deja de administrar, la invitación deja de valer.
+- Al aceptar se crea el acceso y se guarda el consentimiento con la versión del aviso que aceptó quien invitó.
+- `temporal` exige `accesoHasta` y vence solo. No ve la ficha médica salvo `permisoFicha: true` ni la red de cuidado; sí recordatorios, contactos de emergencia y el diario.
+
+**Contactos de emergencia:** `GET/POST /familiares/:id/contactos`, `PUT/DELETE /familiares/:id/contactos/:contactoId` y `PUT /familiares/:id/contactos/orden` con `{ "ids": [...] }`. Los lee cualquier integrante y los cambia quien tiene permiso de edición. Máximo 10.
+
+**Diario:** `GET /familiares/:id/diario?categoria=animo&antes=ISO`, `POST`, `PUT /:notaId` y `DELETE /:notaId`. Categorías: `alimentacion`, `sueno`, `animo`, `incidencia`, `otro`. Escriben titular, administrador, cocuidador y temporal; cada nota la edita o borra solo su autor.
+
+En Aiven, ejecuta una vez `src/database/prisma/sql/red-de-cuidado.sql` (después de `hu08-hu16-acceso-ficha.sql`). Pruebas: `npm run test:red`.
+
 ## Datos de prueba
 
 `npx prisma db seed` crea personas ficticias.

@@ -13,7 +13,8 @@
     "prisma:generate": "prisma generate",
     "postinstall": "prisma generate",
     "test:recordatorios": "tsx --test test/recordatorios.integration.test.ts",
-    "test:accesos": "tsx --test test/accesos.integration.test.ts"
+    "test:accesos": "tsx --test test/accesos.integration.test.ts",
+    "test:red": "tsx --test test/red.integration.test.ts"
   },
   "dependencies": {
     "@prisma/adapter-mariadb": "^6.19.3",
