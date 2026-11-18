@@ -30,7 +30,8 @@ function aRespuesta(persona: PersonaConMiembros, usuarioId?: string) {
     fechaNacimiento: isoSinMilisegundos(mediodiaUTC(persona.fechaNacimiento)),
     parentesco,
     tipoCuidado: tipoAApp[persona.tipoCuidado],
-    telefono: persona.telefono,
+    // Un profesional bajo convenio no necesita el teléfono de la persona (minimización).
+    telefono: miembro?.rol === 'profesional' ? null : persona.telefono,
     notas: null,
     fechaRegistro: isoSinMilisegundos(persona.creadoEn),
     rol: miembro?.rol ?? null,
@@ -41,7 +42,11 @@ export async function listar(usuarioId?: string) {
   const personas = await prisma.personaCuidada.findMany({
     where: {
       NOT: { nombre: { startsWith: MARCA_ELIMINADO } },
-      ...(usuarioId ? { miembros: { some: { usuarioId, estado: { in: ['activo', 'invitado'] } } } } : {}),
+      ...(usuarioId ? { miembros: { some: {
+        usuarioId,
+        estado: { in: ['activo', 'invitado'] },
+        OR: [{ venceEn: null }, { venceEn: { gt: new Date() } }],
+      } } } : {}),
     },
     include: conMiembros,
     orderBy: { creadoEn: 'asc' },

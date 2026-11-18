@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../../database/cliente';
 import { HttpError } from '../../common/utils/http-error';
 import { isoSinMilisegundos } from '../../common/utils/fechas';
+import type { Sesion } from '../../common/utils/autenticacion';
 import { requerirAcceso } from '../../common/utils/permisos';
 import type { GuardarFichaDto } from './ficha-medica.schema';
 
@@ -28,8 +29,14 @@ function aRespuesta(persona: PersonaConFicha) {
   };
 }
 
-export async function obtener(personaId: string, usuarioId: string) {
-  await requerirAcceso(personaId, usuarioId);
+export async function obtener(personaId: string, sesion: Sesion) {
+  const miembro = await requerirAcceso(personaId, sesion.usuarioId, { profesional: true });
+  // El acceso institucional queda registrado antes de entregar los datos (RF-38).
+  if (miembro.rol === 'profesional') {
+    await prisma.bitacoraAcceso.create({
+      data: { personaId, usuarioId: sesion.usuarioId, sesionId: sesion.sesionId, rol: miembro.rol, accion: 'consultar_ficha' },
+    });
+  }
   const persona = await prisma.personaCuidada.findUnique({ where: { id: personaId }, include: conFicha });
   if (!persona) throw new HttpError(404, 'Persona no encontrada');
   if (!persona.ficha && !persona.alergias.length && !persona.padecimientos.length) return null;
@@ -37,7 +44,7 @@ export async function obtener(personaId: string, usuarioId: string) {
 }
 
 export async function guardar(idRecibido: string, datos: GuardarFichaDto, usuarioId: string) {
-  await requerirAcceso(idRecibido, usuarioId, { edicion: true });
+  await requerirAcceso(idRecibido, usuarioId, { edicion: true, profesional: true });
   const existe = await prisma.personaCuidada.findUnique({ where: { id: idRecibido }, select: { id: true } });
   if (!existe) throw new HttpError(404, 'Persona no encontrada');
   const personaId = existe.id;
