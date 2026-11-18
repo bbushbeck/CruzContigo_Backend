@@ -77,3 +77,45 @@ Ejemplo de cuerpo para `PUT /familiares/:id/ficha-medica` (las alergias y enferm
 ## Datos de prueba
 
 `npx prisma db seed` crea personas ficticias.
+
+## Recordatorios
+
+La API usa la tabla `recordatorio` existente en Aiven. Genera el cliente con
+`npm ci` y reinicia la API. En Aiven basta con el esquema existente. En una
+base local nueva, inicialízalo con Prisma como parte de la instalación.
+
+| Método | Ruta | Resultado |
+| --- | --- | --- |
+| GET | `/recordatorios` | 200, lista de los familiares accesibles, ordenada por fecha |
+| POST | `/recordatorios` | 201, crea un recordatorio |
+| PUT | `/recordatorios/:id` | 200, actualiza el recordatorio |
+| DELETE | `/recordatorios/:id` | 204, elimina el recordatorio |
+
+Las cuatro operaciones requieren el token en `Authorization: Bearer`. En un
+familiar vinculado, la cuenta titular y los miembros activos pueden consultar
+sus avisos compartidos. Titulares, administradores y cocuidadores pueden
+modificarlos. Al registrar un familiar con una sesión iniciada, la API vincula
+a la cuenta como administradora.
+
+Un familiar antiguo sin titular, creador ni miembros admite avisos personales.
+Cada aviso queda privado para la cuenta que lo creó, incluso si el familiar se
+vincula después. Se guarda en la misma tabla con una regla de versión 2 que
+incluye `X-CRUZCONTIGO-USUARIO` con el identificador de esa cuenta.
+
+POST y PUT reciben `familiarID`, `titulo`, `fecha` ISO 8601 con zona y
+`completado` (por defecto `false`). Los avisos de una sola vez de la app se
+guardan como tareas, con su fecha UTC y estado en una regla versionada:
+
+```text
+X-CRUZCONTIGO-PROGRAMACION:1
+DTSTART:20270210T153000Z
+X-CRUZCONTIGO-ESTADO:PENDIENTE
+```
+
+Completar desactiva el aviso y guarda su estado. La API actual consulta y
+modifica solo los recordatorios de ese formato. Las notificaciones de la app
+se programan en iOS. La tabla `notificacion` puede registrar envíos y lecturas
+cuando exista un servicio de notificaciones.
+
+Ejecuta `npm run test:recordatorios` con `TEST_DATABASE_URL` apuntando a una
+base local con el esquema inicializado y un nombre terminado en `_test`.

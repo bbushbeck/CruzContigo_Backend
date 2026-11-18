@@ -1,4 +1,5 @@
 import { Router, type Request } from 'express';
+import { usuarioDeSesion } from '../auth/auth.service';
 import { HttpError } from '../../common/utils/http-error';
 import { crearPersonaSchema, idSchema } from './personas.schema';
 import * as personas from './personas.service';
@@ -23,7 +24,9 @@ personasRouter.get('/:id', async (req, res) => {
 
 personasRouter.post('/', async (req, res) => {
   const datos = crearPersonaSchema.parse(req.body);
-  res.status(201).json(await personas.crear(datos, usuarioDe(req)));
+  const authorization = req.header('authorization');
+  const usuarioId = authorization === undefined ? usuarioDe(req) : await usuarioDeSesion(authorization);
+  res.status(201).json(await personas.crear(datos, usuarioId));
 });
 
 personasRouter.delete('/:id', async (req, res) => {

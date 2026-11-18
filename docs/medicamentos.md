@@ -101,12 +101,14 @@ DATABASE_URL='mysql://cruzcontigo:cruzcontigo@127.0.0.1:3306/cruzcontigo_medicam
 ```
 
 Prisma no modela los CHECK de MySQL. En **esa base local nueva y vacía**,
-reemplazar únicamente la tabla recién generada por la copia exacta antes de
-probar. Estos comandos usan las credenciales de desarrollo de Docker Compose:
+reemplazar la tabla recién generada por la copia exacta antes de probar.
+En esa base nueva, elimina primero la tabla vacía de recordatorios que depende
+de ella y recréala con la fixture de pruebas. Estos comandos usan las credenciales de desarrollo de Docker Compose:
 
 ```bash
-docker compose exec -T db sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql -u"$MYSQL_USER" -Dcruzcontigo_medicamentos_test -e "DROP TABLE medicamento;"'
+docker compose exec -T db sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql -u"$MYSQL_USER" -Dcruzcontigo_medicamentos_test -e "DROP TABLE recordatorio; DROP TABLE medicamento;"'
 docker compose exec -T db sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql -u"$MYSQL_USER" -Dcruzcontigo_medicamentos_test' < test/fixtures/medicamento.aiven.sql
+docker compose exec -T db sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql -u"$MYSQL_USER" -Dcruzcontigo_medicamentos_test' < test/fixtures/recordatorio.aiven.sql
 TEST_DATABASE_URL='mysql://cruzcontigo:cruzcontigo@127.0.0.1:3306/cruzcontigo_medicamentos_test' npm run test:medicamentos
 ```
 

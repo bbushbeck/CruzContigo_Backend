@@ -77,6 +77,18 @@ export async function verificarCodigo(challengeId: string, code: string) {
   return { token, user: { id: user.id, phoneNumber: user.telefono } };
 }
 
+export async function usuarioDeSesion(authorization?: string) {
+  const token = /^Bearer ([A-Za-z0-9_-]+)$/i.exec(authorization ?? '')?.[1];
+  if (!token) throw new HttpError(401, 'Inicia sesión para continuar');
+
+  const sesion = await prisma.sesionDispositivo.findFirst({
+    where: { refreshTokenHash: hashToken(token), revocadaEn: null, usuario: { eliminadoEn: null } },
+    select: { usuarioId: true },
+  });
+  if (!sesion) throw new HttpError(401, 'La sesión expiró. Vuelve a iniciar sesión');
+  return sesion.usuarioId;
+}
+
 export async function cerrarSesion(authorization?: string) {
   const [tipo, token] = (authorization ?? '').split(' ');
   if (tipo?.toLowerCase() !== 'bearer' || !token) throw new HttpError(401, 'Token requerido');
