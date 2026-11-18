@@ -65,7 +65,7 @@ export async function tieneConvenioVigente(usuarioId: string) {
 // La persona titular controla quién accede a sus datos. Si no tiene cuenta propia
 // (por ejemplo, un menor o un adulto mayor sin teléfono), lo ejerce su responsable:
 // los administradores de su red.
-export async function requerirGestor(personaId: string, usuarioId: string) {
+export async function rolGestor(personaId: string, usuarioId: string): Promise<'titular' | 'administrador' | null> {
   const persona = await prisma.personaCuidada.findUnique({
     where: { id: personaId },
     select: {
@@ -76,18 +76,20 @@ export async function requerirGestor(personaId: string, usuarioId: string) {
       },
     },
   });
-  if (!persona) throw new HttpError(403, 'No tienes acceso a esta persona');
+  if (!persona) return null;
 
   const titulares = persona.miembros.filter((m) => m.rol === 'titular').map((m) => m.usuarioId);
   if (persona.titularUsuarioId) titulares.push(persona.titularUsuarioId);
-  const gestores = titulares.length
-    ? titulares
-    : persona.miembros.filter((m) => m.rol === 'administrador').map((m) => m.usuarioId);
+  if (titulares.length) return titulares.includes(usuarioId) ? 'titular' : null;
 
-  if (!gestores.includes(usuarioId)) {
-    throw new HttpError(403, 'Solo la persona titular o su responsable puede autorizar o revocar accesos');
-  }
-  return titulares.length ? ('titular' as const) : ('administrador' as const);
+  const administradores = persona.miembros.filter((m) => m.rol === 'administrador').map((m) => m.usuarioId);
+  return administradores.includes(usuarioId) ? 'administrador' : null;
+}
+
+export async function requerirGestor(personaId: string, usuarioId: string) {
+  const rol = await rolGestor(personaId, usuarioId);
+  if (!rol) throw new HttpError(403, 'Solo la persona titular o su responsable puede autorizar o revocar accesos');
+  return rol;
 }
 
 // La red (quién cuida a la persona) la ven quienes forman parte estable de ella.

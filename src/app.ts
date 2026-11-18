@@ -6,6 +6,7 @@ import { fichaMedicaRouter } from './modules/ficha-medica/ficha-medica.routes';
 import { medicamentosRouter } from './modules/medicamentos/medicamentos.routes';
 import { recordatoriosRouter } from './modules/recordatorios/recordatorios.routes';
 import { personasRouter } from './modules/personas/personas.routes';
+import { invitacionesPersonaRouter, invitacionesRouter, redRouter } from './modules/red/red.routes';
 
 export function crearApp() {
   const app = express();
@@ -20,9 +21,12 @@ export function crearApp() {
   app.use('/auth', authRouter);
   app.use('/familiares/:id/ficha-medica', fichaMedicaRouter);
   app.use('/familiares/:id/accesos', accesosRouter);
+  app.use('/familiares/:id/red', redRouter);
+  app.use('/familiares/:id/invitaciones', invitacionesPersonaRouter);
   app.use('/familiares/:id/medicamentos', medicamentosRouter);
   app.use('/familiares', personasRouter);
   app.use('/recordatorios', recordatoriosRouter);
+  app.use('/invitaciones', invitacionesRouter);
 
   app.use(rutaNoEncontrada);
   app.use(manejadorErrores);
