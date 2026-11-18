@@ -2,11 +2,12 @@ import { Prisma, type TipoCuidado } from '@prisma/client';
 import { prisma } from '../../database/cliente';
 import { HttpError } from '../../common/utils/http-error';
 import { isoSinMilisegundos, mediodiaUTC, soloFecha } from '../../common/utils/fechas';
+import { requerirAcceso } from '../../common/utils/permisos';
 import { parentescos, tiposCuidadoApp, type CrearPersonaDto, type TipoCuidadoApp } from './personas.schema';
 
 const MARCA_ELIMINADO = '[eliminado]';
 
-const conMiembros = { miembros: { select: { usuarioId: true, relacion: true } } } satisfies Prisma.PersonaCuidadaInclude;
+const conMiembros = { miembros: { select: { usuarioId: true, relacion: true, rol: true } } } satisfies Prisma.PersonaCuidadaInclude;
 
 type PersonaConMiembros = Prisma.PersonaCuidadaGetPayload<{ include: typeof conMiembros }>;
 
@@ -16,7 +17,9 @@ const tipoAApp = Object.fromEntries(
 
 function aRespuesta(persona: PersonaConMiembros, usuarioId?: string) {
   const [nombre, ...resto] = persona.nombre.trim().split(/\s+/);
-  const miembro = persona.miembros.find((m) => m.usuarioId === usuarioId) ?? persona.miembros[0];
+  const miembro = usuarioId
+    ? persona.miembros.find((m) => m.usuarioId === usuarioId)
+    : persona.miembros[0];
   const relacion = miembro?.relacion?.toLowerCase();
   const parentesco = parentescos.find((p) => p === relacion) ?? 'otro';
 
@@ -30,6 +33,7 @@ function aRespuesta(persona: PersonaConMiembros, usuarioId?: string) {
     telefono: persona.telefono,
     notas: null,
     fechaRegistro: isoSinMilisegundos(persona.creadoEn),
+    rol: miembro?.rol ?? null,
   };
 }
 
@@ -76,6 +80,34 @@ export async function crear(datos: CrearPersonaDto, usuarioId?: string) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === 'P2002') throw new HttpError(409, 'Ya existe una persona con ese identificador');
       if (error.code === 'P2003') throw new HttpError(400, 'El usuario indicado no existe');
+    }
+    throw error;
+  }
+}
+
+export async function actualizar(id: string, datos: CrearPersonaDto, usuarioId: string) {
+  await requerirAcceso(id, usuarioId, true);
+  try {
+    const persona = await prisma.$transaction(async (tx) => {
+      await tx.personaCuidada.update({
+        where: { id },
+        data: {
+          nombre: `${datos.nombre} ${datos.apellidos}`.trim(),
+          fechaNacimiento: soloFecha(datos.fechaNacimiento),
+          telefono: datos.telefono ?? null,
+          tipoCuidado: tiposCuidadoApp[datos.tipoCuidado],
+        },
+      });
+      await tx.miembroRed.updateMany({
+        where: { personaId: id, usuarioId },
+        data: { relacion: datos.parentesco },
+      });
+      return tx.personaCuidada.findUniqueOrThrow({ where: { id }, include: conMiembros });
+    });
+    return aRespuesta(persona, usuarioId);
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+      throw new HttpError(404, 'Persona no encontrada');
     }
     throw error;
   }

@@ -2,10 +2,11 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../../database/cliente';
 import { HttpError } from '../../common/utils/http-error';
 import { isoSinMilisegundos } from '../../common/utils/fechas';
+import { requerirAcceso } from '../../common/utils/permisos';
 import type { GuardarFichaDto } from './ficha-medica.schema';
 
 const conFicha = {
-  ficha: { select: { tipoSanguineo: true, medicoTratante: true, institucionSalud: true, observaciones: true, actualizadoEn: true } },
+  ficha: { select: { tipoSanguineo: true, medicoTratante: true, institucionSalud: true, antecedentes: true, observaciones: true, actualizadoEn: true } },
   alergias: true,
   padecimientos: true,
 } satisfies Prisma.PersonaCuidadaInclude;
@@ -21,19 +22,22 @@ function aRespuesta(persona: PersonaConFicha) {
     enfermedades: persona.padecimientos.map(({ id, nombre, notas }) => ({ id, nombre, notas })),
     medicoTratante: ficha?.medicoTratante ?? null,
     institucionSalud: ficha?.institucionSalud ?? null,
+    antecedentes: ficha?.antecedentes ? Buffer.from(ficha.antecedentes).toString('utf8') : null,
     observaciones: ficha?.observaciones ?? null,
     ultimaActualizacion: isoSinMilisegundos(ficha?.actualizadoEn ?? persona.creadoEn),
   };
 }
 
-export async function obtener(personaId: string) {
+export async function obtener(personaId: string, usuarioId: string) {
+  await requerirAcceso(personaId, usuarioId);
   const persona = await prisma.personaCuidada.findUnique({ where: { id: personaId }, include: conFicha });
   if (!persona) throw new HttpError(404, 'Persona no encontrada');
   if (!persona.ficha && !persona.alergias.length && !persona.padecimientos.length) return null;
   return aRespuesta(persona);
 }
 
-export async function guardar(idRecibido: string, datos: GuardarFichaDto, usuarioId?: string) {
+export async function guardar(idRecibido: string, datos: GuardarFichaDto, usuarioId: string) {
+  await requerirAcceso(idRecibido, usuarioId, true);
   const existe = await prisma.personaCuidada.findUnique({ where: { id: idRecibido }, select: { id: true } });
   if (!existe) throw new HttpError(404, 'Persona no encontrada');
   const personaId = existe.id;
@@ -42,8 +46,9 @@ export async function guardar(idRecibido: string, datos: GuardarFichaDto, usuari
     tipoSanguineo: datos.tipoSanguineo === 'desconocido' ? null : datos.tipoSanguineo,
     medicoTratante: datos.medicoTratante || null,
     institucionSalud: datos.institucionSalud || null,
+    antecedentes: datos.antecedentes ? Buffer.from(datos.antecedentes, 'utf8') : null,
     observaciones: datos.observaciones || null,
-    actualizadoPor: usuarioId ?? null,
+    actualizadoPor: usuarioId,
   };
 
   try {
