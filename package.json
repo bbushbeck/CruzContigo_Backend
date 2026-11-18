@@ -9,6 +9,7 @@
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit",
     "test:medicamentos": "tsx --test test/medicamentos.integration.test.ts",
+    "test:ficha": "tsx --test test/ficha-medica.integration.test.ts",
     "prisma:generate": "prisma generate",
     "postinstall": "prisma generate",
     "test:recordatorios": "tsx --test test/recordatorios.integration.test.ts"
