@@ -31,7 +31,8 @@ function accesoPersona(usuarioId: string, escritura = false): Prisma.PersonaCuid
         usuarioId,
         estado: 'activo',
         OR: [{ venceEn: null }, { venceEn: { gt: new Date() } }],
-        ...(escritura ? { rol: { in: ['titular', 'administrador', 'cocuidador'] } } : {}),
+        // Un profesional bajo convenio solo consulta la ficha médica (minimización por rol).
+        rol: escritura ? { in: ['titular', 'administrador', 'cocuidador'] } : { not: 'profesional' },
       } } },
     ],
   };

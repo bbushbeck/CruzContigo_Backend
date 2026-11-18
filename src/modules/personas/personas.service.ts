@@ -86,7 +86,7 @@ export async function crear(datos: CrearPersonaDto, usuarioId?: string) {
 }
 
 export async function actualizar(id: string, datos: CrearPersonaDto, usuarioId: string) {
-  await requerirAcceso(id, usuarioId, true);
+  await requerirAcceso(id, usuarioId, { edicion: true });
   try {
     const persona = await prisma.$transaction(async (tx) => {
       await tx.personaCuidada.update({

@@ -37,7 +37,7 @@ export async function obtener(personaId: string, usuarioId: string) {
 }
 
 export async function guardar(idRecibido: string, datos: GuardarFichaDto, usuarioId: string) {
-  await requerirAcceso(idRecibido, usuarioId, true);
+  await requerirAcceso(idRecibido, usuarioId, { edicion: true });
   const existe = await prisma.personaCuidada.findUnique({ where: { id: idRecibido }, select: { id: true } });
   if (!existe) throw new HttpError(404, 'Persona no encontrada');
   const personaId = existe.id;
