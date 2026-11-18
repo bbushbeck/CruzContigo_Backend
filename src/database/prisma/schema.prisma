@@ -57,6 +57,9 @@ model PersonaCuidada {
   recordatorios    Recordatorio[]
   consentimientos  Consentimiento[]
   bitacora         BitacoraAcceso[]
+  invitaciones     Invitacion[]
+  contactos        ContactoEmergencia[]
+  notasDiario      NotaDiario[]
 
   @@map("persona_cuidada")
 }
@@ -70,6 +73,8 @@ model MiembroRed {
   estado      EstadoMiembro   @default(invitado)
   venceEn     DateTime?       @map("vence_en") @db.DateTime(3)
   invitadoPor String?         @map("invitado_por") @db.Char(36)
+  // HU-26: un acceso temporal no ve la ficha médica salvo permiso explícito.
+  permisoFicha Boolean        @default(false) @map("permiso_ficha")
   persona     PersonaCuidada  @relation(fields: [personaId], references: [id], onDelete: Cascade)
 
   @@unique([personaId, usuarioId])
@@ -222,6 +227,71 @@ model BitacoraAcceso {
 
   @@index([personaId, creadoEn])
   @@map("bitacora_acceso")
+}
+
+// HU-17 (RF-11): invitación por teléfono o por enlace con código de un solo uso.
+model Invitacion {
+  id           String         @id @default(uuid()) @db.Char(36)
+  personaId    String         @map("persona_id") @db.Char(36)
+  codigoHash   String         @unique @map("codigo_hash") @db.Char(64)
+  telefono     String?        @db.VarChar(20)
+  rol          RolMiembro
+  relacion     String?        @db.VarChar(40)
+  accesoHasta  DateTime?      @map("acceso_hasta") @db.DateTime(3)
+  permisoFicha Boolean        @default(false) @map("permiso_ficha")
+  versionAviso String         @map("version_aviso") @db.VarChar(20)
+  creadaPor    String         @map("creada_por") @db.Char(36)
+  sesionId     String?        @map("sesion_id") @db.Char(36)
+  expiraEn     DateTime       @map("expira_en") @db.DateTime(3)
+  aceptadaPor  String?        @map("aceptada_por") @db.Char(36)
+  aceptadaEn   DateTime?      @map("aceptada_en") @db.DateTime(3)
+  canceladaEn  DateTime?      @map("cancelada_en") @db.DateTime(3)
+  creadoEn     DateTime       @default(now()) @map("creado_en") @db.DateTime(3)
+  persona      PersonaCuidada @relation(fields: [personaId], references: [id], onDelete: Cascade)
+
+  @@index([personaId])
+  @@index([telefono])
+  @@map("invitacion")
+}
+
+// RF-15: contactos de emergencia con parentesco y prioridad (1 = primero).
+model ContactoEmergencia {
+  id         String         @id @default(uuid()) @db.Char(36)
+  personaId  String         @map("persona_id") @db.Char(36)
+  nombre     String         @db.VarChar(120)
+  telefono   String         @db.VarChar(20)
+  parentesco String?        @db.VarChar(40)
+  prioridad  Int            @db.SmallInt
+  creadoPor  String         @map("creado_por") @db.Char(36)
+  creadoEn   DateTime       @default(now()) @map("creado_en") @db.DateTime(3)
+  persona    PersonaCuidada @relation(fields: [personaId], references: [id], onDelete: Cascade)
+
+  @@index([personaId, prioridad])
+  @@map("contacto_emergencia")
+}
+
+enum CategoriaNota {
+  alimentacion
+  sueno
+  animo
+  incidencia
+  otro
+}
+
+// HU-13 (RF-13): diario de cuidado con fecha, autor y persona.
+model NotaDiario {
+  id        String         @id @default(uuid()) @db.Char(36)
+  personaId String         @map("persona_id") @db.Char(36)
+  autorId   String         @map("autor_id") @db.Char(36)
+  categoria CategoriaNota
+  texto     String         @db.VarChar(2000)
+  fecha     DateTime       @db.DateTime(3)
+  creadoEn  DateTime       @default(now()) @map("creado_en") @db.DateTime(3)
+  editadoEn DateTime?      @map("editado_en") @db.DateTime(3)
+  persona   PersonaCuidada @relation(fields: [personaId], references: [id], onDelete: Cascade)
+
+  @@index([personaId, fecha])
+  @@map("nota_diario")
 }
 
 model Medicamento {
