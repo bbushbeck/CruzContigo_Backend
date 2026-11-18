@@ -29,6 +29,7 @@ enum RolMiembro {
   cocuidador
   solo_lectura
   temporal
+  profesional
 }
 
 enum EstadoMiembro {
@@ -54,6 +55,8 @@ model PersonaCuidada {
   padecimientos    Padecimiento[]
   medicamentos     Medicamento[]
   recordatorios    Recordatorio[]
+  consentimientos  Consentimiento[]
+  bitacora         BitacoraAcceso[]
 
   @@map("persona_cuidada")
 }
@@ -159,6 +162,64 @@ model Padecimiento {
   persona    PersonaCuidada  @relation(fields: [personaId], references: [id], onDelete: Cascade)
 
   @@map("padecimiento")
+}
+
+enum AccionConsentimiento {
+  autorizar
+  revocar
+}
+
+// Evidencia de consentimiento (RF-31). Solo inserción: no se actualiza ni se borra.
+model Consentimiento {
+  id           String               @id @default(uuid()) @db.Char(36)
+  personaId    String               @map("persona_id") @db.Char(36)
+  otorgadoPor  String               @map("otorgado_por") @db.Char(36)
+  usuarioId    String               @map("usuario_id") @db.Char(36)
+  accion       AccionConsentimiento
+  rol          RolMiembro
+  versionAviso String               @map("version_aviso") @db.VarChar(20)
+  sesionId     String?              @map("sesion_id") @db.Char(36)
+  creadoEn     DateTime             @default(now()) @map("creado_en") @db.DateTime(3)
+  persona      PersonaCuidada       @relation(fields: [personaId], references: [id], onDelete: Cascade)
+
+  @@index([personaId, creadoEn])
+  @@map("consentimiento")
+}
+
+// Convenio formal con una institución de salud (RF-38).
+model Convenio {
+  id            String                @id @default(uuid()) @db.Char(36)
+  institucion   String                @db.VarChar(120)
+  vigenteDesde  DateTime              @map("vigente_desde") @db.Date
+  vigenteHasta  DateTime?             @map("vigente_hasta") @db.Date
+  activo        Boolean               @default(true)
+  profesionales ProfesionalConvenio[]
+
+  @@map("convenio_institucional")
+}
+
+model ProfesionalConvenio {
+  usuarioId  String   @id @map("usuario_id") @db.Char(36)
+  convenioId String   @map("convenio_id") @db.Char(36)
+  cedula     String   @db.VarChar(20)
+  convenio   Convenio @relation(fields: [convenioId], references: [id], onDelete: Cascade)
+
+  @@map("profesional_convenio")
+}
+
+// Accesos registrados a la ficha médica. Solo inserción.
+model BitacoraAcceso {
+  id        String         @id @default(uuid()) @db.Char(36)
+  personaId String         @map("persona_id") @db.Char(36)
+  usuarioId String         @map("usuario_id") @db.Char(36)
+  sesionId  String?        @map("sesion_id") @db.Char(36)
+  rol       RolMiembro
+  accion    String         @db.VarChar(40)
+  creadoEn  DateTime       @default(now()) @map("creado_en") @db.DateTime(3)
+  persona   PersonaCuidada @relation(fields: [personaId], references: [id], onDelete: Cascade)
+
+  @@index([personaId, creadoEn])
+  @@map("bitacora_acceso")
 }
 
 model Medicamento {
