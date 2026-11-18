@@ -12,11 +12,11 @@ const DIA_MS = 24 * 60 * 60 * 1000;
 type DatosUsuario = Pick<Usuario, 'id' | 'nombre' | 'telefono'>;
 
 // Solo los últimos 4 dígitos: basta para reconocer a la persona (minimización).
-function telefonoEnmascarado(telefono?: string) {
+export function telefonoEnmascarado(telefono?: string) {
   return telefono ? `•••• ${telefono.slice(-4)}` : null;
 }
 
-async function usuariosPorId(ids: string[]) {
+export async function usuariosPorId(ids: string[]) {
   const usuarios = await prisma.usuario.findMany({
     where: { id: { in: [...new Set(ids)] } },
     select: { id: true, nombre: true, telefono: true },
@@ -24,7 +24,7 @@ async function usuariosPorId(ids: string[]) {
   return new Map(usuarios.map((u) => [u.id, u]));
 }
 
-function aMiembro(miembro: MiembroRed, usuario: DatosUsuario | undefined, usuarioActual: string) {
+export function aMiembro(miembro: MiembroRed, usuario: DatosUsuario | undefined, usuarioActual: string) {
   const vencido = miembro.venceEn !== null && miembro.venceEn <= new Date();
   return {
     id: miembro.id,
@@ -34,6 +34,7 @@ function aMiembro(miembro: MiembroRed, usuario: DatosUsuario | undefined, usuari
     relacion: miembro.relacion,
     estado: vencido && miembro.estado === 'activo' ? 'vencido' : miembro.estado,
     venceEn: miembro.venceEn ? isoSinMilisegundos(miembro.venceEn) : null,
+    permisoFicha: miembro.permisoFicha,
     esTuCuenta: miembro.usuarioId === usuarioActual,
   };
 }

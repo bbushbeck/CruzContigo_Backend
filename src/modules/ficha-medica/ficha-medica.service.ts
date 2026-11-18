@@ -30,7 +30,7 @@ function aRespuesta(persona: PersonaConFicha) {
 }
 
 export async function obtener(personaId: string, sesion: Sesion) {
-  const miembro = await requerirAcceso(personaId, sesion.usuarioId, { profesional: true });
+  const miembro = await requerirAcceso(personaId, sesion.usuarioId, { profesional: true, ficha: true });
   // El acceso institucional queda registrado antes de entregar los datos (RF-38).
   if (miembro.rol === 'profesional') {
     await prisma.bitacoraAcceso.create({

@@ -9,6 +9,8 @@ type OpcionesAcceso = {
   edicion?: boolean;
   /** Permite el acceso acotado de un profesional bajo convenio (solo ficha médica). */
   profesional?: boolean;
+  /** La petición entrega la ficha médica: un acceso temporal necesita permiso explícito (HU-26). */
+  ficha?: boolean;
 };
 
 export const miembroVigente = (): Prisma.MiembroRedWhereInput => ({
@@ -30,6 +32,10 @@ export async function requerirAcceso(personaId: string, usuarioId: string, opcio
     if (!(await tieneConvenioVigente(usuarioId))) {
       throw new HttpError(403, 'Tu acceso requiere un convenio institucional vigente');
     }
+  }
+
+  if (opciones.ficha && miembro.rol === 'temporal' && !miembro.permisoFicha) {
+    throw new HttpError(403, 'Tu acceso temporal no incluye la ficha médica');
   }
 
   if (opciones.edicion && !rolesEdicion.has(miembro.rol)) {
@@ -82,4 +88,12 @@ export async function requerirGestor(personaId: string, usuarioId: string) {
     throw new HttpError(403, 'Solo la persona titular o su responsable puede autorizar o revocar accesos');
   }
   return titulares.length ? ('titular' as const) : ('administrador' as const);
+}
+
+// La red (quién cuida a la persona) la ven quienes forman parte estable de ella.
+// Un acceso temporal o profesional no necesita conocer al resto (minimización).
+export async function requerirIntegrante(personaId: string, usuarioId: string) {
+  const miembro = await requerirAcceso(personaId, usuarioId);
+  if (miembro.rol === 'temporal') throw new HttpError(403, 'Tu acceso temporal no incluye la red de cuidado');
+  return miembro;
 }

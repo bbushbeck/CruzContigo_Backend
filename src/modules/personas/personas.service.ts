@@ -7,7 +7,9 @@ import { parentescos, tiposCuidadoApp, type CrearPersonaDto, type TipoCuidadoApp
 
 const MARCA_ELIMINADO = '[eliminado]';
 
-const conMiembros = { miembros: { select: { usuarioId: true, relacion: true, rol: true } } } satisfies Prisma.PersonaCuidadaInclude;
+const conMiembros = {
+  miembros: { select: { usuarioId: true, relacion: true, rol: true, venceEn: true, permisoFicha: true } },
+} satisfies Prisma.PersonaCuidadaInclude;
 
 type PersonaConMiembros = Prisma.PersonaCuidadaGetPayload<{ include: typeof conMiembros }>;
 
@@ -35,6 +37,9 @@ function aRespuesta(persona: PersonaConMiembros, usuarioId?: string) {
     notas: null,
     fechaRegistro: isoSinMilisegundos(persona.creadoEn),
     rol: miembro?.rol ?? null,
+    // HU-17 y HU-26: la app muestra solo lo que el rol permite y cuándo vence el acceso.
+    accesoVenceEn: miembro?.venceEn ? isoSinMilisegundos(miembro.venceEn) : null,
+    permisoFicha: miembro?.rol === 'temporal' ? miembro.permisoFicha : null,
   };
 }
 
